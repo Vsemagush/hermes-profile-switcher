@@ -1,0 +1,11 @@
+{
+  "name": "hermes-profile-switcher",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "SDK-native new-chat picker for the Hermes Desktop composer (desktop UI half only).",
+  "scripts": {
+    "test": "node --experimental-vm-modules --test tests/*.test.mjs",
+    "check": "node --check desktop/plugin.js"
+  }
+}

@@ -1,0 +1,13 @@
+name: hermes-profile-switcher
+version: 0.1.0
+description: >-
+  SDK-native new-chat picker for the Hermes Desktop composer. Picking a profile
+  opens a standard new chat on that profile's route; the plugin sends no
+  messages and writes no drafts.
+author: Vsemagush
+kind: standalone
+manifest_version: 2
+tags:
+  - desktop
+  - ui
+  - profiles

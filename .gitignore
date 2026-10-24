@@ -1,0 +1,21 @@
+# Dependencies and local build/check output
+node_modules/
+coverage/
+*.log
+
+# Credentials and local environment
+.env
+.env.*
+*.pem
+*.key
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local archives and rollback copies
+*.zip
+*.tar.gz
+*.bak
