@@ -22,6 +22,20 @@ Open a new chat with another profile, choose how much context to carry, and keep
 
 This plugin opens **new sessions**. It does not change an existing chat's owner, insert a guest reply, send a message automatically, or transfer composer drafts or attachments.
 
+## Screenshots
+
+**Open the profile picker from the composer.**
+
+![Composer profile control next to the attachment button](docs/images/composer-control.png)
+
+**Choose the target profile.**
+
+![Profile menu showing the default and named profiles](docs/images/profile-menu.png)
+
+**Choose what to carry into the new chat.**
+
+![Handoff dialog with Start fresh, Brief handoff and Copy context choices](docs/images/handoff-dialog.png)
+
 ## Compatibility
 
 Initial version: **0.1.0** in `plugin.yaml`.
