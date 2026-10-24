@@ -1,9 +1,15 @@
 {
   "name": "hermes-profile-switcher",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "SDK-native new-chat picker for the Hermes Desktop composer (desktop UI half only).",
+  "description": "Hermes Desktop profile picker for new chats with explicit context handoff and verified project inheritance; no auto-send or draft manipulation.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Vsemagush/hermes-profile-switcher.git"
+  },
+  "homepage": "https://github.com/Vsemagush/hermes-profile-switcher",
   "scripts": {
     "test": "node --experimental-vm-modules --test tests/*.test.mjs",
     "check": "node --check desktop/plugin.js"

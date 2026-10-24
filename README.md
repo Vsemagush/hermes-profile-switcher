@@ -26,6 +26,8 @@ This plugin opens **new sessions**. It does not change an existing chat's owner,
 
 Initial version: **0.1.0** in `plugin.yaml`.
 
+Supported Hermes floor: **0.22.2 or newer**, declared in the manifest. This is a conservative support boundary for the checked SDK generation, not a claim that every older build lacks these APIs or that every newer build/platform has been UI-tested.
+
 Target checked: **Hermes Desktop v0.22.2**, client source commit `8b66a51036c1e20920a17cdd049fdf55c968d683`. The Windows tester reported successful checks of the three choices, project inheritance, cancellation and preservation of the source chat after the project-lane fix. This is a user-reported acceptance result, not an automated Electron certification or a claim of compatibility with every build or operating system.
 
 The plugin uses only public `@hermes/plugin-sdk`, React and JSX-runtime imports. No build step, bundled dependencies, Python backend or install scripts are required. SDK availability is checked at runtime; unsupported builds may offer only plain new-chat behavior or show an unavailable notice. Creating a handoff requires browser Web Crypto; without it the operation is refused rather than using a predictable key. See [usage and compatibility limits](docs/USAGE.md).
@@ -34,17 +36,37 @@ The subsequent pre-publication hardening (random operation keys, late focus guar
 
 ## Install
 
-1. Obtain this repository's source and locate **`desktop/plugin.js`**.
-2. In the **Desktop app**, open the plugins settings and use **Open folder** to find the app's actual desktop plugins directory. With a remote gateway, use the local Desktop directory, not the server's profile home.
-3. Create a subfolder named **`hermes-profile-switcher`** and copy the file into it as **`plugin.js`**:
+**Install from Git.** Settings → Plugins → **Install from Git**, and use the identifier:
 
-   ```text
-   <desktop plugins directory>/hermes-profile-switcher/plugin.js
-   ```
+```text
+Vsemagush/hermes-profile-switcher
+```
 
-4. Hermes normally hot-loads the file. If needed, run **Reload desktop plugins** from the command palette. Ensure **Profile New Chat** is enabled in the plugin settings.
+Review the installation prompt, then enable **Profile New Chat** in Desktop plugin settings if it is not already enabled. No API key, `npm install` or gateway restart is needed.
 
-No `npm install` or gateway restart is needed for installation. Do not copy the whole repository into the loaded plugin directory.
+**One-click link.** The `repo` probe shows what will be installed before anything is written:
+
+```html
+<a href="hermes://plugin/install?repo=Vsemagush/hermes-profile-switcher&enable=1">Install in Hermes</a>
+```
+
+The same target as a plain URL, for pasting into the app or a message:
+
+```text
+hermes://plugin/install?repo=Vsemagush/hermes-profile-switcher&enable=1
+```
+
+**By hand.** Copy `desktop/plugin.js` into the app-level desktop plugins directory as:
+
+```text
+$HERMES_HOME/desktop-plugins/hermes-profile-switcher/plugin.js
+```
+
+Use **Open folder** in the Desktop plugin settings to find the actual app-level directory (`~/.hermes/desktop-plugins/...` by default). The subfolder must match the plugin id, **`hermes-profile-switcher`**. With a remote gateway, install the UI file on the Desktop machine, not just on the server. Do not copy the whole repository into the loaded plugin directory.
+
+The app hot-loads the file and later saves. If needed, run **Reload desktop plugins** from the command palette.
+
+The plugin is being prepared for the curated catalog; it is not listed there yet. Use the Git identifier above, not a catalog-name install command.
 
 ### Update, disable or remove
 
@@ -76,12 +98,12 @@ npm test
 npm run check
 ```
 
-The current suite has **214 passing tests** against the real plugin entry loaded through SDK/React doubles, including fixtures that pin the documented media-filtering limits. These tests do not run Electron, a live model or the Windows UI. If a Hermes CLI is available, the package can additionally be checked with `hermes plugins validate . --json`.
+The current suite has **220 passing tests** covering the real plugin entry loaded through SDK/React doubles, documented media-filtering limits and metadata contracts. These tests do not run Electron, a live model or the Windows UI. If a Hermes CLI is available, run the catalog admission check with `hermes plugins validate . --install-deps --json`.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution boundaries and [CHANGELOG.md](CHANGELOG.md) for the initial feature set.
 
 ## License
 
-[MIT](LICENSE), copyright (c) 2026 Vsemagush.
+MIT — see [LICENSE](LICENSE).
 
 Hermes, its SDK and React are supplied by the host application and retain their respective licenses. They are not vendored into this repository. This is an independent plugin, not an official Nous Research release.

@@ -16,7 +16,8 @@
 - Explicit mount-local recovery of known created sessions with no new create/title/history transfer.
 - Best-effort filtering of recognisable projected/structured media, including media glued to neighbouring text without a separator; every ordinary HTTP link is preserved, so complete exclusion of attachment references is not guaranteed.
 - The connection-qualified route is re-read and revalidated after awaited reads and immediately before every open attempt.
-- 214 actual-entry tests using SDK/React doubles, including fixtures pinning the documented media-filtering limits; syntax and Hermes manifest validation pass.
+- 220 tests covering the actual entry with SDK/React doubles, documented media-filtering limits and metadata contracts; syntax and Hermes catalog admission validation pass.
+- Catalog preparation: matching package/manifest version `0.1.0`, conservative Hermes floor `>=0.22.2`, MIT/public repository metadata and Git/deep-link/manual installation instructions.
 - Windows checks of the three choices, project inheritance, cancellation and source preservation reported successful by the tester before pre-publication hardening; the subsequent changes still need Windows retesting.
 
 This entry describes the prepared source snapshot, not a GitHub release announcement. Other Desktop builds/platforms are not certified. Multi-folder/worktree/ambiguous project structures, guest replies inside the source chat, model calls, automatic submission and draft/attachment transfer are outside this version.
