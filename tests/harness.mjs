@@ -135,6 +135,9 @@ export async function harness({ routes = [route()], missing, metadata, focus = f
     }
   })
   const sdk = { host, COMPOSER_AREAS: { leading: 'composer.leading' } }
+  // Symbolic SDK colors make delegation observable without copying the native palette.
+  sdk.profileColor = profile => `var(--mock-profile-${Array.from(profile, char => char.codePointAt(0).toString(16)).join('-')})`
+  sdk.profileColorSoft = (color, opacity) => `color-mix(in srgb, ${color} ${opacity}%, transparent)`
   sdk.useValue = atom => {
     const [value, setValue] = hooks.useState(() => atom.get())
     hooks.useEffect(() => {

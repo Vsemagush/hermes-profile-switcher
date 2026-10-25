@@ -65,8 +65,7 @@ const DEFAULT_ICON = 'home'
 const ROUTE_QUERY_KEY = [PLUGIN_ID, 'profile-routes']
 /** UI heuristic: retain half the native gap; do not resize either control. */
 const COMPOSER_GAP_RATIO = 0.5
-/** Theme-driven tints for the initials badge — no literal colors. */
-const INITIAL_TINTS = [14, 20, 26, 32]
+
 /** Bounded provenance lookup window; the SDK clamps anything larger to 500. */
 const LOOKUP_LIMIT = 200
 /** Minting a session can outlast the pool's default deadline. */
@@ -219,15 +218,18 @@ function isSameRoute(left, right) {
   )
 }
 
-function initialTint(route) {
-  const seed = `${route.connectionId}/${route.profile}`
-  let hash = 0
+function profileBadgeColors(profile) {
+  if (typeof sdk.profileColor === 'function' && typeof sdk.profileColorSoft === 'function') {
+    // Native hue is name-only; connection-qualified routing remains independent.
+    const color = sdk.profileColor(profile)
 
-  for (let index = 0; index < seed.length; index += 1) {
-    hash = (hash * 31 + seed.charCodeAt(index)) % 100000
+    return { backgroundColor: sdk.profileColorSoft(color, 22), color }
   }
 
-  return INITIAL_TINTS[hash % INITIAL_TINTS.length]
+  return {
+    backgroundColor: 'color-mix(in srgb, var(--ui-text-quaternary) 22%, transparent)',
+    color: 'var(--ui-text-quaternary)'
+  }
 }
 
 /**
@@ -1113,8 +1115,7 @@ function ProfileNewChatPicker({ context }) {
         style: {
           width: '0.875rem',
           height: '0.875rem',
-          backgroundColor: `color-mix(in srgb, var(--ui-accent) ${initialTint(owner)}%, transparent)`,
-          color: 'var(--ui-accent)'
+          ...profileBadgeColors(owner.profile)
         },
         children: Array.from(owner.profile)[0].toUpperCase()
       })
@@ -1541,7 +1542,7 @@ function ProfileNewChatPicker({ context }) {
 
       for (const entry of entries) {
         const isDefault = entry.route.profile === 'default'
-        const tint = initialTint(entry.route)
+
         const badge = isDefault
           ? jsx(
               Codicon,
@@ -1558,10 +1559,7 @@ function ProfileNewChatPicker({ context }) {
                 'aria-hidden': true,
                 className:
                   'inline-flex size-4 items-center justify-center rounded-[3px] text-[0.625rem] font-semibold',
-                style: {
-                  backgroundColor: `color-mix(in srgb, var(--ui-accent) ${tint}%, transparent)`,
-                  color: 'var(--ui-accent)'
-                },
+                style: profileBadgeColors(entry.route.profile),
                 children: entry.label.slice(0, 1).toUpperCase()
               },
               'badge'
