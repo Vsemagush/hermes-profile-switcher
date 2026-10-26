@@ -32,8 +32,9 @@
  * What it deliberately does NOT do: no message is sent, no draft or attachment
  * is read/written/moved, no source session is resumed or modified, no model is
  * called, no credential is stored, and the global workspace cwd is never used
- * as a project. History is read only for the two context variants, only from
- * the focused chat's own route, and only ever copied into the new chat. Closing
+ * as a project. History is read from the focused chat's own route for the two
+ * context variants and for two-door emptiness checks, including Start fresh or
+ * choosing the current profile. Only context variants seed it into a new chat. Closing
  * the menu or the dialog is a pure UI action. Limits are documented in
  * docs/SDK_NATIVE_PICKER_USAGE.md.
  *
@@ -103,6 +104,8 @@ const COPY_ACTION = 'Copy context'
 const BRIEF_ACTION = 'Brief handoff'
 const FRESH_ACTION = 'Start fresh'
 const COPY_EMPTY_TEXT = 'That chat has no visible messages to copy, so the new chat opened without copied context.'
+/** A live, empty, not-yet-persisted draft: nothing exists to carry over. */
+const EMPTY_DRAFT_TEXT = 'That chat is empty, so the new chat opened without carried context.'
 /** Seeded scaffolding note; never starts with "[System:" (the gateway hides those user rows). */
 const provenanceFor = profile =>
   `Context copied from the "${profile}" profile by the profile switcher. ` +
@@ -388,7 +391,7 @@ const profileLabel = profile => (profile === 'default' ? DEFAULT_LABEL : profile
  * without the door (direct contract use) keeps the previous behaviour; a real
  * registration only proceeds when `host.profileRoutes` exists.
  */
-async function confirmRoute(host, route) {
+async function confirmRoute(host, route, source = null) {
   if (typeof host?.profileRoutes !== 'function') {
     return { ok: true, route }
   }
@@ -401,14 +404,20 @@ async function confirmRoute(host, route) {
     return { code: 'route-unreadable', ok: false }
   }
 
-  const matches = (Array.isArray(routes) ? routes : []).filter(candidate =>
-    isWellFormedRoute(candidate) && routeKey(candidate) === routeKey(route))
+  let confirmed
+  // Empty-live proof depends on BOTH mappings. Validate them against the same
+  // refreshed roster, with no await between validation and the caller's open.
+  for (const expected of source ? [route, source] : [route]) {
+    const matches = (Array.isArray(routes) ? routes : []).filter(candidate =>
+      isWellFormedRoute(candidate) && routeKey(candidate) === routeKey(expected))
 
-  if (matches.length === 0) return { code: 'route-missing', ok: false }
-  if (matches.length > 1) return { code: 'route-ambiguous', ok: false }
-  if (!isSameRoute(matches[0], route)) return { code: 'route-changed', ok: false }
+    if (matches.length === 0) return { code: 'route-missing', ok: false }
+    if (matches.length > 1) return { code: 'route-ambiguous', ok: false }
+    if (!isSameRoute(matches[0], expected)) return { code: 'route-changed', ok: false }
+    if (expected === route) confirmed = matches[0]
+  }
 
-  return { ok: true, route: { ...matches[0] } }
+  return { ok: true, route: { ...confirmed } }
 }
 
 /** Latch focus drift, including away-and-back changes during a pending RPC. */
@@ -472,6 +481,93 @@ async function projectTree(host, route) {
   } catch {
     return null
   }
+}
+
+/** Exact synthetic Home membership, not a missing/unverified project. */
+function isConfirmedHome(project, storedId) {
+  const ids = project?.sessionIds
+  const repos = project?.repos
+  const repo = Array.isArray(repos) && repos.length === 1 ? repos[0] : null
+  const groups = repo?.groups
+  const lane = Array.isArray(groups) && groups.length === 1 ? groups[0] : null
+
+  return project?.id === '__no_project__' && project.path === null &&
+    project.isNoProject === true && project.isAuto === false &&
+    Array.isArray(ids) && ids.includes(storedId) &&
+    ids.every(id => isStoredId(id)) && new Set(ids).size === ids.length &&
+    project.sessionCount === ids.length &&
+    repo?.id === '__no_project__' && repo.path === null && repo.sessionCount === ids.length &&
+    lane?.id === '__no_project__' && lane.path === null &&
+    lane.isMain === false && lane.isKanban === false && Array.isArray(lane.sessions)
+}
+
+/**
+ * Empty needs TWO independent public doors to agree, because one of them cannot
+ * tell the two cases apart. The live roster (session.active_list) is blind to a
+ * defer-hydrating SAVED chat: `_session_live_status` ignores `resume_hydrating`
+ * and the build starts only after hydration, so it reports `idle`, and
+ * `_session_live_item` counts `len(session["history"])` — which is `[]` for the
+ * whole hydration window. A saved non-empty chat therefore looks exactly like a
+ * brand-new draft on that door. The persistent door (`session.history`, the same
+ * call `readTail` already uses) reads the durable row, so it answers with the
+ * real count for a saved chat and zero for a session that was never persisted.
+ * Both must agree on emptiness; a disagreement, an error, a missing door or a
+ * non-empty answer refuses. `title`, `resume_message_count` and any guessed or
+ * global field are never used as evidence.
+ */
+async function confirmEmptyDraft({ host, source, snapshot }) {
+  const runtimeId = typeof snapshot?.runtimeId === 'string' ? snapshot.runtimeId.trim() : ''
+  const storedId = isStoredId(snapshot?.storedId) ? snapshot.storedId.trim() : ''
+
+  if (!runtimeId || !storedId || typeof host?.requestProfile !== 'function') {
+    return false
+  }
+
+  let answer
+
+  try {
+    answer = await host.requestProfile(source, 'session.active_list', {
+      current_session_id: runtimeId, profile: source.targetProfile
+    })
+  } catch {
+    return false
+  }
+
+  const rows = answer?.sessions
+
+  if (!Array.isArray(rows) || !rows.every(row => row && typeof row === 'object' &&
+    !Array.isArray(row) && typeof row.id === 'string' && row.id.trim() !== '')) {
+    return false
+  }
+
+  const mine = rows.filter(row => row.id === runtimeId)
+
+  if (mine.length !== 1) {
+    return false
+  }
+
+  const row = mine[0]
+
+  // `current` merely echoes id === current_session_id; it is consistency, not
+  // independent evidence. Missing/unknown/starting status is NOT idle.
+  if (!(row.current === true && row.session_key === storedId && row.message_count === 0 &&
+    row.preview === '' && row.status === 'idle')) {
+    return false
+  }
+
+  // Second, independent door on the SAME session: the durable row. A saved chat
+  // that is still hydrating keeps its real count here even while the live roster
+  // reports zero, so this is what actually separates the two cases.
+  let history
+
+  try {
+    history = await host.requestProfile(source, 'session.history',
+      { profile: source.targetProfile, session_id: runtimeId }, SESSION_RPC_TIMEOUT_MS)
+  } catch {
+    return false
+  }
+
+  return history?.count === 0 && Array.isArray(history?.messages) && history.messages.length === 0
 }
 
 /**
@@ -540,14 +636,16 @@ async function resolveInheritedProject({ host, routes, target, snapshot }) {
   const row = rows.find(candidate => candidate && typeof candidate === 'object' && candidate.id === storedId)
 
   if (!row) {
-    return rows.length >= LOOKUP_LIMIT ? refusal('lookup-limited') : refusal('row-missing')
+    // The bounded page cannot prove emptiness OR disprove positive live proof.
+    // Consult the exact live identity before choosing the appropriate refusal.
+    if (await confirmEmptyDraft({ host, source, snapshot })) {
+      return { code: 'empty-draft', ok: false, source: { route: source, storedId } }
+    }
+
+    return refusal(rows.length >= LOOKUP_LIMIT ? 'lookup-limited' : 'row-missing')
   }
 
   const cwd = typeof row.cwd === 'string' ? row.cwd.trim() : ''
-
-  if (!cwd) {
-    return refusal('cwd-blank')
-  }
 
   const sourceProjects = await projectTree(host, source)
 
@@ -563,7 +661,7 @@ async function resolveInheritedProject({ host, routes, target, snapshot }) {
     : sourceProjects.filter(node => folderKey(node?.path) === cwdKey)
 
   if (candidates.length === 0) {
-    return refusal('project-missing')
+    return refusal(cwd ? 'project-missing' : 'cwd-blank')
   }
 
   if (candidates.length > 1) {
@@ -572,7 +670,35 @@ async function resolveInheritedProject({ host, routes, target, snapshot }) {
 
   const project = candidates[0]
 
-  if (project.isNoProject === true || !folderKey(project.path)) {
+  if (project.isNoProject === true) {
+    // Only authoritative Home membership can discard a persisted launch/home
+    // cwd. Never infer No project from a blank row or a path-only match.
+    if (!isConfirmedHome(project, storedId) || claimed.length !== 1 ||
+      !(row.cwd === null || typeof row.cwd === 'string')) {
+      return refusal('project-missing')
+    }
+
+    // Home needs no target tree match, but both mappings must still be current
+    // after the awaited persisted/tree reads and before any create.
+    for (const route of [source, target]) {
+      const fresh = await confirmRoute(host, route)
+      if (!fresh.ok) return refusal(fresh.code)
+    }
+
+    return {
+      ok: true,
+      source: {
+        cwd: '', projectId: null, projectKind: 'none', route: source, storedId,
+        title: typeof row.title === 'string' ? row.title.trim() : ''
+      },
+      target: { cwd: '', noProject: true, projectId: null, projectKind: 'none', route: { ...target } },
+      seed: { messages: [] }
+    }
+  }
+
+  if (!cwd) return refusal('cwd-blank')
+
+  if (!folderKey(project.path)) {
     return refusal('project-missing')
   }
 
@@ -989,6 +1115,11 @@ async function openInheritedChat({ host, context, seed, key, isCurrent }) {
 
   let created
 
+  // The last awaited read before create must confirm BOTH full mappings.
+  const fresh = await confirmRoute(host, route, context.source?.route)
+  if (!isCurrent()) return { code: 'abandoned', ok: false }
+  if (!fresh.ok) return fresh
+
   try {
     created = await host.requestProfile(route, 'session.create', params, SESSION_RPC_TIMEOUT_MS)
   } catch {
@@ -1002,7 +1133,10 @@ async function openInheritedChat({ host, context, seed, key, isCurrent }) {
     return { code: 'create-unclear', ok: false }
   }
 
-  const recovery = { runtimeId, storedId, route, cwd, messageCount: messages.length, expectHistory: messages.length > 0 }
+  const recovery = {
+    runtimeId, storedId, route, cwd, noProject: context.target.noProject === true,
+    messageCount: messages.length, expectHistory: messages.length > 0
+  }
   const failed = code => ({ code, ok: false, recovery })
 
   if (!isCurrent()) return failed('abandoned')
@@ -1019,6 +1153,32 @@ async function openInheritedChat({ host, context, seed, key, isCurrent }) {
   }
 
   return openKnownChat({ host, recovery, isCurrent })
+}
+
+/** One plain `host.newChat` reached AFTER awaited reads: the route is re-read and
+ * the write is skipped if the descriptor moved. Nothing is created or retried. */
+async function openPlainChat({ host, isCurrent, route, source }) {
+  if (!isCurrent()) {
+    return { code: 'abandoned', ok: false }
+  }
+
+  const fresh = await confirmRoute(host, route, source)
+
+  if (!isCurrent()) {
+    return { code: 'abandoned', ok: false }
+  }
+
+  if (!fresh.ok) {
+    return { code: fresh.code, ok: false }
+  }
+
+  try {
+    host.newChat(fresh.route)
+  } catch {
+    return { code: 'new-chat-failed', ok: false }
+  }
+
+  return { ok: true }
 }
 
 /** Read-only confirmation and opening of exact known IDs; never re-create/title. */
@@ -1041,6 +1201,7 @@ async function openKnownChat({ host, recovery, isCurrent }) {
   const row = rows.find(candidate => candidate && typeof candidate === 'object' && candidate.id === storedId)
 
   if (!row || row.profile !== route.targetProfile || row.message_count !== messageCount ||
+    (recovery.noProject === true && row.cwd !== null) ||
     (cwd && folderKey(row.cwd) !== folderKey(cwd))) {
     return failed('create-unconfirmed')
   }
@@ -1280,7 +1441,7 @@ function ProfileNewChatPicker({ context }) {
         return
       }
 
-      if (!isCurrent()) {
+      if (!canContinue()) {
         return
       }
 
@@ -1311,6 +1472,21 @@ function ProfileNewChatPicker({ context }) {
       const resolved = await resolveInheritedProject({ host, routes, snapshot, target: fresh })
 
       if (!isCurrent()) {
+        return
+      }
+
+      // A live, empty, unpersisted draft has nothing to carry: no project to
+      // inherit and no words to copy. It still opens a chat on that profile —
+      // the same honest action as the unconfirmed-context path.
+      if (!resolved.ok && resolved.code === 'empty-draft') {
+        const plain = await openPlainChat({ host, isCurrent: canContinue, route: fresh, source: resolved.source.route })
+
+        if (!isCurrent() || plain.ok || plain.code === 'abandoned') {
+          return
+        }
+
+        notify(REFUSALS[plain.code] ?? OPEN_FAILED_TEXT)
+
         return
       }
 
@@ -1424,11 +1600,13 @@ function ProfileNewChatPicker({ context }) {
       }
 
       // A different gateway cannot carry the project, but it is not a dead end:
-      // the chat still opens, without a project, and the user is told so. Every
-      // other unconfirmed topology stays a visible refusal before any write.
+      // the chat still opens, without a project, and the user is told so. A
+      // proven empty draft is the same "nothing to carry" case. Every other
+      // unconfirmed topology stays a visible refusal before any write.
       const crossSource = !resolved.ok && resolved.code === 'cross-source'
+      const emptyDraft = !resolved.ok && resolved.code === 'empty-draft'
 
-      if (!resolved.ok && !crossSource) {
+      if (!resolved.ok && !crossSource && !emptyDraft) {
         notify(REFUSALS[resolved.code] ?? INHERIT_FAILED_TEXT)
 
         return
@@ -1436,6 +1614,28 @@ function ProfileNewChatPicker({ context }) {
 
       if (!isSameSnapshot(snapshot, sourceSnapshot(host))) {
         notify(REFUSALS['source-drift'])
+
+        return
+      }
+
+      // No fake seed here: the source proved it has no words and no folder, so
+      // every variant of "carry something over" is honestly just a new chat.
+      if (emptyDraft) {
+        const plain = await openPlainChat({ host, isCurrent: canContinue, route: fresh, source: resolved.source.route })
+
+        if (!isCurrent() || plain.code === 'abandoned') {
+          return
+        }
+
+        if (plain.ok) {
+          if (kind !== 'fresh') {
+            notify(EMPTY_DRAFT_TEXT)
+          }
+
+          return
+        }
+
+        notify(REFUSALS[plain.code] ?? OPEN_FAILED_TEXT)
 
         return
       }
@@ -1457,7 +1657,7 @@ function ProfileNewChatPicker({ context }) {
       }
 
       const context = crossSource
-        ? { target: { cwd: '', projectId: null, route: fresh } }
+        ? { source: resolved.source, target: { cwd: '', projectId: null, route: fresh } }
         : resolved
       const outcome = await openInheritedChat({ context, host, isCurrent: canContinue, key, seed: variant.seed })
 

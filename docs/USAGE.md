@@ -6,6 +6,8 @@ Click the compact indicator next to the composer's `+`, then choose a profile. I
 
 The icon follows the **globally focused stored chat**. All split-composer copies display that same readout. A fresh draft or unknown owner uses a neutral indicator instead of inventing an owner from the active gateway.
 
+Named icons use the public SDK's native profile-color helpers, with a neutral theme fallback when those helpers are unavailable. This does not read or promise to reproduce custom avatar/rail overrides.
+
 ## Context choices
 
 For a known stored source chat and a different profile, a native dialog asks **Continue with <Profile>?**:
@@ -15,7 +17,11 @@ For a known stored source chat and a different profile, a native dialog asks **C
 - **Start fresh:** create an empty session. The plugin may title its own newly created session to persist it, but does not send a fake message or call a model.
 - **Cancel, Escape, backdrop or close button:** abandon the dialog without creating or opening anything.
 
-Choosing the current profile skips the context-choice dialog and opens a new empty chat with the supported inheritance path. With no confirmed source, or missing optional handoff APIs, the supported plain new-chat action is used without inherited context. Unsupported required SDK exports result in an unavailable control rather than an invented route.
+When the persisted list has no source row, the empty path requires **two independent doors to agree**: a strictly idle and empty live session row with matching runtime/durable ids, and a transcript read for that same session reporting zero messages. A saved chat still hydrating in the background can report the same idle/zero/empty live shape, so the live row alone is never proof. Disagreement, errors or an unavailable door refuse the operation. The different-profile dialog still appears: **Start fresh** opens silently; **Copy context** and **Brief handoff** explain that nothing was carried. This path uses plain new-chat without fake seeds or title writes, and cannot establish an inherited project folder.
+
+Choosing the current profile skips the context-choice dialog and opens a new empty chat with the supported inheritance path. With no confirmed source, missing optional handoff APIs or a proven empty draft, the supported plain new-chat action is used without inherited context. A stored Home chat can still carry selected text through **Copy context** or **Brief handoff**; only project inheritance is absent. Unsupported required SDK exports result in an unavailable control rather than an invented route.
+
+Emptiness verification itself may read the live roster and source transcript even for **Start fresh** or the current profile. Carrying transcript text into another session remains limited to an explicit context choice.
 
 Copying is a deliberate disclosure to the target profile and, for a cross-gateway selection, to the other gateway. The source profile's prior assistant replies remain attributed to that source in the provenance note; they are not newly generated replies by the target. Nothing is automatically submitted. Subsequent user-initiated model requests may include the seeded text and consume model context.
 
@@ -31,13 +37,19 @@ The public history projection can lose the original content type. A plain HTTP U
 
 For the same gateway/mode, the plugin reads the source session's persisted folder and verifies source and target project trees. It supports a confirmed single root checkout, named projects and automatic folder groups. Historical main-checkout branch groups and a consistent empty target project are allowed.
 
-The plugin refuses ambiguous source membership, a missing or blank source folder, conflicting named projects, malformed groups, multiple folders, worktrees and kanban lanes. It does not create a project or guess one from global UI state. An unavailable/contradictory tree produces a visible refusal before session creation. The session lookup page is bounded to 200 entries; the source must be present in the returned page.
+**No project (Home) is a confirmed context, not a failure.** The source must belong to the project tree's exact synthetic Home bucket with no path; a blank folder alone is not proof. The new target session opens without an inherited `cwd`.
+
+The plugin refuses ambiguous source membership, a blank folder not claimed by Home, conflicting named projects, malformed groups, multiple folders, worktrees and kanban lanes. It never guesses a project from global UI state. An unavailable/contradictory tree refuses before creation. Lookup is bounded to 200 entries: a missing row does not imply an empty chat, but the two-door empty check runs before the window-limit refusal. Without positive proof the previous refusal remains.
+
+Opening the menu performs no session lookup and opens no chat. The plugin registers no keyboard shortcut; native Ctrl+N is handled by Hermes.
 
 For a different gateway or mode, folder identity is not shared. The new session has **no explicit inherited cwd/project**, and a notice explains that limitation. The selected context option is still honored; a brief can include a source path as text, but the plugin never transfers the folder or its files.
 
 ## Failure and retry
 
 The selected full route is refreshed and checked for removal, remapping and ambiguity. Each pending operation watches the three source identity atoms; leaving and returning to the same source does not revive an abandoned intent. Drift before create prevents that write; drift during an accepted create/title/read-back prevents subsequent plugin writes or open/retry calls. A completed create is not rolled back. An `openSession` already accepted by the SDK cannot be cancelled by this watcher and may complete its internal dial/navigation after focus changes. The source guard is cleaned up on completion, unmount and disposal; a new explicit click need not wait for a stale RPC to time out.
+
+The early plain-new-chat path and context dialog also check latched focus drift after roster reads. Before every `session.create`, the full source and target mappings are refreshed together after the last history/project read; lifecycle/focus is checked again after that refresh. Missing, changed, duplicate, malformed or unreadable mappings refuse the write rather than saving a seed to an outdated backend profile. This is not an atomic transaction with host operations already accepted.
 
 Creation uses one cryptographically random per-operation idempotency key, generated through browser Web Crypto rather than a registration-local counter. Without a working entropy source, create is refused. A seeded session receives the chosen messages; an empty one is materialized through a title write to that newly created session only. The plugin reads back the durable session before opening it and retries a failed **open** once, never the create.
 
@@ -58,9 +70,9 @@ The plugin never calls model/submit/steer APIs. It uses the app's authenticated 
 
 ## Compatibility boundary
 
-The reviewed source target is Hermes Desktop v0.22.2 at `8b66a51036c1e20920a17cdd049fdf55c968d683`. Windows acceptance of the three actions, project inheritance, cancellation and source preservation was reported by the tester for the version before pre-publication hardening. The random-key/focus-guard/recovery/media-filter changes have automated coverage but are not yet Windows-retested. This is an experimental candidate, not certification of every gateway topology, older/newer Desktop build, operating system, keyboard layout or responsive arrangement.
+The reviewed source target is Hermes Desktop v0.22.2 at `8b66a51036c1e20920a17cdd049fdf55c968d683`. Windows smoke checks of the three actions, project inheritance, cancellation and source preservation were reported by the tester, with subsequent successful-test feedback for the updated plugin. The consolidated catalog candidate has independent source/SDK-double coverage, not an independently retrieved installed Windows digest or automated Electron certification. This experimental plugin does not certify every gateway topology, older/newer build, operating system, keyboard layout or responsive arrangement.
 
-Relevant public interfaces are `profileRoutes`, focused session atoms, `listPersistedSessions`, `requestProfile` for `projects.tree`, `session.history`, `session.create` and `session.title`, and `openSession`. Plain new-chat fallback uses `newChat`. The default export id and installation subfolder must both be `hermes-profile-switcher`; its displayed name is **Profile New Chat**.
+Relevant public interfaces are `profileRoutes`, focused session atoms, `listPersistedSessions`, `requestProfile` for `projects.tree`, `session.active_list`, `session.history`, `session.create` and `session.title`, and `openSession`. Named icon colors use public `profileColor`/`profileColorSoft`. Plain new-chat fallback uses `newChat`. The default export id and installation subfolder must both be `hermes-profile-switcher`; its displayed name is **Profile New Chat**.
 
 The menu uses technical descriptor names, not custom roster display labels. It is loaded through the SDK query cache with explicit retry, no polling, and fresh route validation on selection. The plugin's own CSS places the control visually before `+` and reduces the inherited gap by half; this is build-dependent and does not reorder keyboard focus.
 

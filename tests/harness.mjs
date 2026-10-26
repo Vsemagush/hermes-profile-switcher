@@ -40,10 +40,10 @@ export function focusState(owner = null, storedId = 'stored-chat', runtimeId = '
     subscriptions: () => ownerState.count() + idState.count() + runtimeState.count()
   }
 }
-export async function harness({ routes = [route()], missing, metadata, focus = focusState(), sessions, projects, create, title, history, openSession, crypto = webcrypto } = {}) {
+export async function harness({ routes = [route()], missing, metadata, focus = focusState(), sessions, projects, live, create, title, history, openSession, crypto = webcrypto } = {}) {
   const calls = [], notices = [], contributions = [], disposers = [], effects = []
   const hostAccesses = [], ctxAccesses = [], stateAccesses = []
-  const persisted = [], rpcCalls = [], creates = [], titles = [], opens = [], treeCalls = [], histories = []
+  const persisted = [], rpcCalls = [], creates = [], titles = [], opens = [], treeCalls = [], histories = [], liveCalls = []
   const slots = []
   let cursor = 0, tree, mounted = true, reads = 0, listReads = 0, renderFn
   let reader = async () => routes
@@ -118,6 +118,14 @@ export async function harness({ routes = [route()], missing, metadata, focus = f
         histories.push({ params: params ?? {}, route: routeArg, timeoutMs })
         if (!history) throw Error('session.history is not configured in this harness')
         return history(routeArg, params ?? {})
+      }
+      if (method === 'session.active_list') {
+        liveCalls.push({ params: params ?? {}, route: routeArg, timeoutMs })
+        if (!live) throw Error('session.active_list is not configured in this harness')
+        const rows = typeof live === 'function' ? await live(routeArg, params ?? {}) : live
+        // Array shorthand for native rows; raw envelopes let tests expose
+        // malformed wire data rather than silently normalising it away.
+        return Array.isArray(rows) ? { sessions: rows } : rows
       }
       throw Error(`Forbidden RPC: ${method}`)
     },
@@ -290,6 +298,7 @@ export async function harness({ routes = [route()], missing, metadata, focus = f
     get opens() { return opens },
     get treeCalls() { return treeCalls },
     get histories() { return histories },
+    get liveCalls() { return liveCalls },
     // The entry's own named exports, as the real loader would see them.
     get namespace() { return entry.namespace },
     reader(fn) { reader = fn },

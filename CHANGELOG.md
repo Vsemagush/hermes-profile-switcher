@@ -16,8 +16,13 @@
 - Explicit mount-local recovery of known created sessions with no new create/title/history transfer.
 - Best-effort filtering of recognisable projected/structured media, including media glued to neighbouring text without a separator; every ordinary HTTP link is preserved, so complete exclusion of attachment references is not guaranteed.
 - The connection-qualified route is re-read and revalidated after awaited reads and immediately before every open attempt.
-- 220 tests covering the actual entry with SDK/React doubles, documented media-filtering limits and metadata contracts; syntax and Hermes catalog admission validation pass.
+- Confirmed synthetic Home membership permits no-project chats; a blank folder alone never proves Home.
+- Missing source rows require strict live identity/idle/empty fields and an independent zero-message transcript before a plain empty new chat is allowed, even beyond a full 200-row lookup page. Hydrating saved chats are not classified empty from the live row alone. Unpersisted drafts do not inherit a project; the different-profile choice dialog is retained.
+- Named glyph colors delegate to public SDK profileColor/profileColorSoft helpers with a neutral fallback; no custom palette or private avatar lookup.
+- Latched source-drift checks cancel abandoned early plain-new-chat/dialog actions, including navigation away and back during the initial roster read.
+- Full source/target mappings are refreshed after the final history/project read and immediately before create; focus/lifecycle is checked again so stale mappings do not receive the copied seed.
+- 450 tests covering the actual entry with SDK/React doubles, empty-source/Home/hydration guards, native colors, late mapping/cancellation guards, documented media-filtering limits and metadata contracts; syntax and Hermes catalog admission validation pass.
 - Catalog preparation: matching package/manifest version `0.1.0`, conservative Hermes floor `>=0.22.2`, MIT/public repository metadata and Git/deep-link/manual installation instructions.
-- Windows checks of the three choices, project inheritance, cancellation and source preservation reported successful by the tester before pre-publication hardening; the subsequent changes still need Windows retesting.
+- User-reported Windows smoke checks and subsequent successful-test feedback are recorded separately from automated source/SDK-double checks. The consolidated catalog candidate is not independently Electron-certified.
 
 This entry describes the prepared source snapshot, not a GitHub release announcement. Other Desktop builds/platforms are not certified. Multi-folder/worktree/ambiguous project structures, guest replies inside the source chat, model calls, automatic submission and draft/attachment transfer are outside this version.
