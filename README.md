@@ -116,7 +116,7 @@ npm test
 npm run check
 ```
 
-The current suite has **450 passing tests** covering the real plugin entry loaded through SDK/React doubles, Home/no-project and two-door empty-source checks, native profile-color delegation, pre-create route freshness, abandoned-action cancellation, documented media-filtering limits and metadata contracts. These tests do not run Electron, a live model or the Windows UI. If a Hermes CLI is available, run the catalog admission check with `hermes plugins validate . --install-deps --json`.
+The current suite has **461 passing tests** covering the real plugin entry loaded through SDK/React doubles, Home/no-project and two-door empty-source checks, native profile-color delegation and named-glyph geometry, pre-create route freshness, abandoned-action cancellation, documented media-filtering limits and metadata contracts. These tests do not run Electron, a live model or the Windows UI. If a Hermes CLI is available, run the catalog admission check with `hermes plugins validate . --install-deps --json`.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution boundaries and [CHANGELOG.md](CHANGELOG.md) for the initial feature set.
 

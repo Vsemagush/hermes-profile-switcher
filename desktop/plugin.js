@@ -1272,12 +1272,8 @@ function ProfileNewChatPicker({ context }) {
   const triggerBadge = knownOwner && owner.profile !== 'default'
     ? jsx('span', {
         'aria-hidden': true,
-        className: 'inline-flex items-center justify-center rounded-[3px] text-[0.625rem] font-semibold',
-        style: {
-          width: '0.875rem',
-          height: '0.875rem',
-          ...profileBadgeColors(owner.profile)
-        },
+        className: 'grid size-4 shrink-0 place-items-center rounded-[3px] text-[0.5rem] font-semibold uppercase leading-none',
+        style: profileBadgeColors(owner.profile),
         children: Array.from(owner.profile)[0].toUpperCase()
       })
     : jsx(Codicon, {
@@ -1758,7 +1754,7 @@ function ProfileNewChatPicker({ context }) {
               {
                 'aria-hidden': true,
                 className:
-                  'inline-flex size-4 items-center justify-center rounded-[3px] text-[0.625rem] font-semibold',
+                  'grid size-4 shrink-0 place-items-center rounded-[3px] text-[0.5rem] font-semibold uppercase leading-none',
                 style: profileBadgeColors(entry.route.profile),
                 children: entry.label.slice(0, 1).toUpperCase()
               },
