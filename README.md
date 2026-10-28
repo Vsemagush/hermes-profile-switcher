@@ -57,7 +57,7 @@ The tester subsequently reported the updated plugin working in smoke tests. The 
 Vsemagush/hermes-profile-switcher
 ```
 
-Review the installation prompt, then enable **Profile New Chat** in Desktop plugin settings if it is not already enabled. No API key, `npm install` or gateway restart is needed.
+Review the installation prompt, then enable **Hermes Profile Switcher** in Desktop plugin settings if it is not already enabled. No API key, `npm install` or gateway restart is needed.
 
 **One-click link.** The `repo` probe shows what will be installed before anything is written:
 
@@ -86,7 +86,7 @@ The plugin is being prepared for the curated catalog; it is not listed there yet
 ### Update, disable or remove
 
 - **Update:** keep a backup of the old file outside the loaded plugins directory, then replace only this plugin's `plugin.js`.
-- **Disable:** turn off **Profile New Chat** in Desktop plugin settings.
+- **Disable:** turn off **Hermes Profile Switcher** in Desktop plugin settings.
 - **Remove:** disable it and remove only the `hermes-profile-switcher` subfolder.
 - **Roll back:** restore the backed-up file and reload plugins if necessary.
 
@@ -116,7 +116,7 @@ npm test
 npm run check
 ```
 
-The current suite has **461 passing tests** covering the real plugin entry loaded through SDK/React doubles, Home/no-project and two-door empty-source checks, native profile-color delegation and named-glyph geometry, pre-create route freshness, abandoned-action cancellation, documented media-filtering limits and metadata contracts. These tests do not run Electron, a live model or the Windows UI. If a Hermes CLI is available, run the catalog admission check with `hermes plugins validate . --install-deps --json`.
+The current suite has **462 passing tests** covering the real plugin entry loaded through SDK/React doubles, Home/no-project and two-door empty-source checks, native profile-color delegation and named-glyph geometry, pre-create route freshness, abandoned-action cancellation, documented media-filtering limits and metadata contracts. These tests do not run Electron, a live model or the Windows UI. If a Hermes CLI is available, run the catalog admission check with `hermes plugins validate . --install-deps --json`.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution boundaries and [CHANGELOG.md](CHANGELOG.md) for the initial feature set.
 

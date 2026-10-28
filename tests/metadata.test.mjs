@@ -27,6 +27,10 @@ test('metadata: package, manifest and Desktop entry share the public identity', 
   assert.ok(/export default \{\s+id: PLUGIN_ID,/.test(entry), 'Desktop export uses the shared plugin id')
 })
 
+test('metadata: Desktop display name matches the public product name', () => {
+  assert.equal(entry.match(/export default \{\s+id: PLUGIN_ID,\s+name: '([^']+)'/)?.[1], 'Hermes Profile Switcher')
+})
+
 test('metadata: tooling and manifest versions match the initial product version', () => {
   assert.equal(pkg.version, '0.1.0')
   scalar('version', pkg.version)

@@ -1,5 +1,5 @@
 /**
- * Profile New Chat — an SDK-native new-chat picker for the Hermes Desktop
+ * Hermes Profile Switcher — an SDK-native new-chat picker for the Hermes Desktop
  * composer, contributed into `COMPOSER_AREAS.leading` (just before the
  * composer's own "+").
  *
@@ -1909,7 +1909,7 @@ function missingRequirements(host) {
 
 export default {
   id: PLUGIN_ID,
-  name: 'Profile New Chat',
+  name: 'Hermes Profile Switcher',
   register(ctx) {
     const host = sdk.host ?? {}
     const missing = missingRequirements(host)
